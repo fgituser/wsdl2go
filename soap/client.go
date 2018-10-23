@@ -114,7 +114,9 @@ func doRoundTrip(c *Client, setHeaders func(*http.Request), in, out Message) err
 		req.TNSAttr = req.NSAttr
 	}
 	var b bytes.Buffer
-	err := xml.NewEncoder(&b).Encode(req)
+	encoder:= xml.NewEncoder(&b)
+	encoder.Indent(" ", "   ")
+	err := encoder.Encode(req)
 	if err != nil {
 		return err
 	}
@@ -122,6 +124,7 @@ func doRoundTrip(c *Client, setHeaders func(*http.Request), in, out Message) err
 	if cli == nil {
 		cli = http.DefaultClient
 	}
+	fmt.Println(&b)
 	r, err := http.NewRequest("POST", c.URL, &b)
 	if err != nil {
 		return err
@@ -212,7 +215,11 @@ func (c *Client) RoundTripWithAction(soapAction string, in, out Message) error {
 // RoundTripSoap12 implements the RoundTripper interface for SOAP 1.2.
 func (c *Client) RoundTripSoap12(action string, in, out Message) error {
 	headerFunc := func(r *http.Request) {
-		r.Header.Add("Content-Type", fmt.Sprintf("application/soap+xml; charset=utf-8; action=\"%s\"", action))
+		r.Header.Add("Content-Type", fmt.Sprintf("application/soap+xml;charset=UTF-8; action=\"%s\"", action))
+		r.Header.Add("Host", "r42-rc.zdrav.netrika.ru")
+		r.Header.Add("Connection", "Keep-Alive")
+		r.Header.Add("Accept-Encoding", "gzip,deflate")
+		r.Header.Set("User-Agent", "Apache-HttpClient/4.1.1 (java 1.5)")
 	}
 	return doRoundTrip(c, headerFunc, in, out)
 }
@@ -230,12 +237,12 @@ func (e *HTTPError) Error() string {
 
 // Envelope is a SOAP envelope.
 type Envelope struct {
-	XMLName      xml.Name `xml:"SOAP-ENV:Envelope"`
-	EnvelopeAttr string   `xml:"xmlns:SOAP-ENV,attr"`
+	XMLName      xml.Name `xml:"soap:Envelope"`
+	EnvelopeAttr string   `xml:"xmlns:soap,attr"`
 	NSAttr       string   `xml:"xmlns:ns,attr"`
 	TNSAttr      string   `xml:"xmlns:tns,attr,omitempty"`
 	URNAttr      string   `xml:"xmlns:urn,attr,omitempty"`
 	XSIAttr      string   `xml:"xmlns:xsi,attr,omitempty"`
-	Header       Message  `xml:"SOAP-ENV:Header"`
-	Body         Message  `xml:"SOAP-ENV:Body"`
+	Header       Message  `xml:"soap:Header"`
+	Body         Message  `xml:"soap:Body"`
 }
